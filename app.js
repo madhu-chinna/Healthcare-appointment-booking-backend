@@ -54,8 +54,19 @@ let doctors = [
 let appointments = [];
 let nextAppointmentId = 1;
 
-app.use(cors());
+// Configure CORS for production
+app.use(cors({
+  origin: true, // Allow all origins for testing
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
+
+// Test endpoint
+app.get('/', (req, res) => {
+  res.json({ message: 'Niroggyan Healthcare Backend is running!' });
+});
 
 // Initialize Server
 const initializeServer = async () => {
