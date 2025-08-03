@@ -1,7 +1,7 @@
 const express = require('express');
 const path = require('path');
 const { body, validationResult } = require('express-validator');
-const moment = require('moment');
+const moment = require('moment-timezone');
 const cors = require("cors");
 
 const app = express();
@@ -14,7 +14,7 @@ let doctors = [
     name: 'Dr. Alice Smith',
     specialization: 'Cardiology',
     working_hours: JSON.stringify({ start: '08:00', end: '16:00' }),
-    profile_image: 'https://i.pravatar.cc/150?img=1',
+    profile_image: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&h=150&fit=crop&crop=face',
     availability_status: 'Available Today'
   },
   {
@@ -22,7 +22,7 @@ let doctors = [
     name: 'Dr. Bob Johnson',
     specialization: 'Neurology',
     working_hours: JSON.stringify({ start: '10:00', end: '18:00' }),
-    profile_image: 'https://i.pravatar.cc/150?img=2',
+    profile_image: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=150&h=150&fit=crop&crop=face',
     availability_status: 'Available Today'
   },
   {
@@ -30,7 +30,7 @@ let doctors = [
     name: 'Dr. Charlie Brown',
     specialization: 'Pediatrics',
     working_hours: JSON.stringify({ start: '09:00', end: '17:00' }),
-    profile_image: 'https://i.pravatar.cc/150?img=3',
+    profile_image: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&h=150&fit=crop&crop=face',
     availability_status: 'Fully Booked'
   },
   {
@@ -38,7 +38,7 @@ let doctors = [
     name: 'Dr. Sarah Wilson',
     specialization: 'Dermatology',
     working_hours: JSON.stringify({ start: '08:30', end: '16:30' }),
-    profile_image: 'https://i.pravatar.cc/150?img=4',
+    profile_image: 'https://images.unsplash.com/photo-1594824475542-9d1d775414e6?w=150&h=150&fit=crop&crop=face',
     availability_status: 'On Leave'
   },
   {
@@ -46,7 +46,7 @@ let doctors = [
     name: 'Dr. Michael Chen',
     specialization: 'Orthopedics',
     working_hours: JSON.stringify({ start: '09:30', end: '17:30' }),
-    profile_image: 'https://i.pravatar.cc/150?img=5',
+    profile_image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
     availability_status: 'Available Today'
   }
 ];
@@ -138,18 +138,20 @@ app.get('/doctors/:id/slots', async (req, res) => {
 
   const workingHours = JSON.parse(doctor.working_hours);
   let availableSlots = [];
-  let startTime = moment(`${date} ${workingHours.start}`, 'YYYY-MM-DD HH:mm');
-  let endTime = moment(`${date} ${workingHours.end}`, 'YYYY-MM-DD HH:mm');
+  
+  // Use Indian Standard Time (IST) for all time calculations
+  let startTime = moment.tz(`${date} ${workingHours.start}`, 'YYYY-MM-DD HH:mm', 'Asia/Kolkata');
+  let endTime = moment.tz(`${date} ${workingHours.end}`, 'YYYY-MM-DD HH:mm', 'Asia/Kolkata');
 
   // Checking if the requested date is today
-  const today = moment().format('YYYY-MM-DD');
+  const today = moment.tz('Asia/Kolkata').format('YYYY-MM-DD');
   const isToday = date === today;
-  const currentTime = moment();
+  const currentTime = moment.tz('Asia/Kolkata');
 
   // Generating slots based on requested duration
   while (startTime.add(duration, 'minutes') <= endTime) {
     const slotStart = startTime.clone().subtract(duration, 'minutes');
-    const slotTime = moment(`${date} ${slotStart.format('HH:mm')}`, 'YYYY-MM-DD HH:mm');
+    const slotTime = moment.tz(`${date} ${slotStart.format('HH:mm')}`, 'YYYY-MM-DD HH:mm', 'Asia/Kolkata');
     
     // If it's today, only including slots that are in the future
     if (!isToday || slotTime.isAfter(currentTime)) {
@@ -165,11 +167,11 @@ app.get('/doctors/:id/slots', async (req, res) => {
   // Filtering out overlapping slots
   const conflictingSlots = [];
   bookedAppointments.forEach(appointment => {
-    const appointmentStart = moment(appointment.date);
+    const appointmentStart = moment.tz(appointment.date, 'Asia/Kolkata');
     const appointmentEnd = appointmentStart.clone().add(appointment.duration, 'minutes');
     
     availableSlots.forEach(slot => {
-      const slotStart = moment(`${date} ${slot}`, 'YYYY-MM-DD HH:mm');
+      const slotStart = moment.tz(`${date} ${slot}`, 'YYYY-MM-DD HH:mm', 'Asia/Kolkata');
       const slotEnd = slotStart.clone().add(parseInt(duration), 'minutes');
       
       if (slotStart < appointmentEnd && slotEnd > appointmentStart) {
@@ -194,11 +196,11 @@ app.post('/appointments', async (req, res) => {
     
     // Validating working hours
     const workingHours = JSON.parse(doctor.working_hours);
-    const appointmentTime = moment(date);
+    const appointmentTime = moment.tz(date, 'Asia/Kolkata');
     const appointmentEnd = appointmentTime.clone().add(duration, 'minutes');
-    const dayStart = moment(date).format('YYYY-MM-DD');
-    const workStart = moment(`${dayStart} ${workingHours.start}`, 'YYYY-MM-DD HH:mm');
-    const workEnd = moment(`${dayStart} ${workingHours.end}`, 'YYYY-MM-DD HH:mm');
+    const dayStart = moment.tz(date, 'Asia/Kolkata').format('YYYY-MM-DD');
+    const workStart = moment.tz(`${dayStart} ${workingHours.start}`, 'YYYY-MM-DD HH:mm', 'Asia/Kolkata');
+    const workEnd = moment.tz(`${dayStart} ${workingHours.end}`, 'YYYY-MM-DD HH:mm', 'Asia/Kolkata');
     
     if (appointmentTime < workStart || appointmentEnd > workEnd) {
       return res.status(400).json({ error: 'Appointment time is outside doctor working hours' });
@@ -245,11 +247,11 @@ app.put('/appointments/:id', async (req, res) => {
     if (!doctor) return res.status(404).json({ error: 'Doctor not found' });
     
     const workingHours = JSON.parse(doctor.working_hours);
-    const appointmentTime = moment(date);
+    const appointmentTime = moment.tz(date, 'Asia/Kolkata');
     const appointmentEnd = appointmentTime.clone().add(duration, 'minutes');
-    const dayStart = moment(date).format('YYYY-MM-DD');
-    const workStart = moment(`${dayStart} ${workingHours.start}`, 'YYYY-MM-DD HH:mm');
-    const workEnd = moment(`${dayStart} ${workingHours.end}`, 'YYYY-MM-DD HH:mm');
+    const dayStart = moment.tz(date, 'Asia/Kolkata').format('YYYY-MM-DD');
+    const workStart = moment.tz(`${dayStart} ${workingHours.start}`, 'YYYY-MM-DD HH:mm', 'Asia/Kolkata');
+    const workEnd = moment.tz(`${dayStart} ${workingHours.end}`, 'YYYY-MM-DD HH:mm', 'Asia/Kolkata');
     
     if (appointmentTime < workStart || appointmentEnd > workEnd) {
       return res.status(400).json({ error: 'Appointment time is outside doctor working hours' });
