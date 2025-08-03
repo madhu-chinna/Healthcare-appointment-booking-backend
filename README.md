@@ -37,7 +37,7 @@ A Node.js backend for healthcare appointment booking system.
 
 ```bash
 npm install
-npm run dev
+node app.js or nodemon app.js (if you are using nodemon)
 ```
 
 The server will start on `http://localhost:3008`
